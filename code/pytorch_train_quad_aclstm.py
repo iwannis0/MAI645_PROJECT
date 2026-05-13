@@ -14,7 +14,7 @@ Hidden_size = 1024
 Joints_num =  57
 Condition_num=5
 Groundtruth_num=5
-In_frame_size = Joints_num*3
+in_frame_size = Joints_num*3
 
 
 class acLSTM(nn.Module):
@@ -43,9 +43,9 @@ class acLSTM(nn.Module):
         h2= torch.autograd.Variable(torch.FloatTensor(np.zeros((batch, self.hidden_size)) ).cuda())
         return  ([h0,h1,h2], [c0,c1,c2])
     
-    #in_frame b*In_frame_size
+    #in_frame b*in_frame_size
     #vec_h [b*1024,b*1024,b*1024] vec_c [b*1024,b*1024,b*1024]
-    #out_frame b*In_frame_size
+    #out_frame b*in_frame_size
     #vec_h_new [b*1024,b*1024,b*1024] vec_c_new [b*1024,b*1024,b*1024]
     def forward_lstm(self, in_frame, vec_h, vec_c):
 
@@ -108,7 +108,7 @@ class acLSTM(nn.Module):
 
 
 #numpy array real_seq_np: batch*seq_len*frame_size
-def train_one_iteraton(real_seq_np, model, optimizer, iteration, save_dance_folder, print_loss=False, save_bvh_motion=True):
+def train_one_iteraton(real_seq_np, model, optimizer, iteration, save_dance_folder, print_loss=False, save_bvh_motion=True, in_frame_size=175):
 
     # set hip_x and hip_z as the difference from the future frame to current frame
     # Subtract post (t+1) - t. Then, you will have the difference between each pose timestamp
@@ -144,7 +144,7 @@ def train_one_iteraton(real_seq_np, model, optimizer, iteration, save_dance_fold
     
     if(save_bvh_motion==True):
         ##save the first motion sequence int the batch.
-        gt_seq = np.array(predict_groundtruth_seq[0].data.tolist()).reshape(-1,In_frame_size)
+        gt_seq = np.array(predict_groundtruth_seq[0].data.tolist()).reshape(-1,in_frame_size)
         last_x = 0.0
         last_z = 0.0
         # Change hip xyz previous hip location for ground truth sequence
@@ -155,7 +155,7 @@ def train_one_iteraton(real_seq_np, model, optimizer, iteration, save_dance_fold
             gt_seq[frame,Hip_index*3+2]=gt_seq[frame,Hip_index*3+2]+last_z
             last_z=gt_seq[frame,Hip_index*3+2]
         
-        out_seq=np.array(predict_seq[0].data.tolist()).reshape(-1,In_frame_size)
+        out_seq=np.array(predict_seq[0].data.tolist()).reshape(-1,in_frame_size)
         last_x=0.0
         last_z=0.0
         # Change hip xyz based on previous hip locations for out seq
@@ -237,7 +237,7 @@ def train(dances, frame_rate, batch, seq_len, read_weight_path, write_weight_fol
             dance=dances[dance_id].copy()
             dance_len = dance.shape[0]
             
-            start_id=random.randint(10, dance_len-seq_len*speed-10)#the first and last several frames are sometimes noisy. 
+            start_id=random.randint(10, int(dance_len - seq_len * speed - 10))#the first and last several frames are sometimes noisy. 
             sample_seq=[]
             for i in range(seq_len):
                 sample_seq=sample_seq+[dance[int(i*speed+start_id)]]
@@ -255,11 +255,11 @@ def train(dances, frame_rate, batch, seq_len, read_weight_path, write_weight_fol
         if(iteration % 20==0):
             print_loss=True
         if(iteration % 1000==0):
-            save_bvh_motion=True
+            save_bvh_motion=False
             path = write_weight_folder + "%07d"%iteration +".weight"
             torch.save(model.state_dict(), path)
             
-        train_one_iteraton(dance_batch_np, model, optimizer, iteration, write_bvh_motion_folder, print_loss, save_bvh_motion)
+        train_one_iteraton(dance_batch_np, model, optimizer, iteration, write_bvh_motion_folder, print_loss, save_bvh_motion, in_frame_size=in_frame)
 
 
 def main():

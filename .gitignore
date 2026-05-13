@@ -1,0 +1,17 @@
+__pycache__/
+*.pyc
+
+train_data_pos/
+train_data_euler/
+train_data_quad/
+
+reconstructed_bvh_data_euler/
+reconstructed_bvh_data_quad/
+reconstructed_bvh_data_pos/
+
+generated_bvh/
+weights/
+outputs/
+
+train_weight_aclstm_martial/
+*.weight
